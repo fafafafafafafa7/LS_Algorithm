@@ -10,7 +10,6 @@
 #include "utils.h"
 
 std::string inputFile, outputFile;
-std::string metisPath;
 
 int timeLim;
 
@@ -25,6 +24,8 @@ int seed = 772002;
 double alpha = 1.1;
 
 GraphIO io;
+
+std::string partitionFileName;
 
 bool inputParam(int argc, char *argv[]) {
     args::ArgumentParser parser(
@@ -41,7 +42,11 @@ bool inputParam(int argc, char *argv[]) {
 
     args::ValueFlag<std::string> output_file(
         parser, "output file", "Path to output file", {'o', "ouput"},
-        "output/output.txt");
+        "output.txt");
+
+    args::ValueFlag<std::string> partition_file(
+        parser, "initial partition file", "Path to initial partition file", {'i', "initial"},
+        "init_partition.txt");
 
     args::ValueFlag<int> Parts(parser, "part number",
                                "The number of parts you want to partition into",
@@ -58,10 +63,6 @@ bool inputParam(int argc, char *argv[]) {
         "The local search method, supported options: "
         "MoveBlockG and MoveBlockF",
         {'l', "local"}, "MoveBlockG");
-
-    args::ValueFlag<std::string> MetisPath(
-        parser, "Metis Path", "The Path to metis solver", {'m', "metis"},
-        "third_party/metis/gpmetis");
 
     args::ValueFlag<int> TimeLim(parser, "Time limitation",
                                  "The cut down time in second", {'t', "time"},
@@ -91,7 +92,6 @@ bool inputParam(int argc, char *argv[]) {
     std::string opt;
 
     timeLim = args::get(TimeLim);
-    metisPath = args::get(MetisPath);
 
     alpha = args::get(Alpha);
 
@@ -104,17 +104,6 @@ bool inputParam(int argc, char *argv[]) {
     else if (opt == "MoveBlockF")
         lsOpt = 4;
     return true;
-}
-
-std::string getPartitionFileName() {
-    std::string res = "";
-    std::string graphName;
-    int p = 0;
-    for (int i = 0; i < inputFile.length(); ++ i)
-        if (inputFile[i] == '/') p = i;
-    graphName.assign(inputFile.begin() + p + 1, inputFile.begin() + inputFile.length() - 4);
-    res = "temp_partition/" + graphName + "_" + std::to_string(algOpt) + "_" + std::to_string(seed) + "_" + std::to_string(alpha) + "_" + std::to_string(partNum) + ".txt";
-    return res;
 }
 
 int main(int argc, char *argv[]) {
@@ -132,7 +121,6 @@ int main(int argc, char *argv[]) {
     int lowSize = (double)(G->M) / partNum / alpha + 0.5;
     int upSize = (double)(G->M) / partNum * alpha + 0.5;
 
-    std::string partitionFileName = getPartitionFileName();
     std::ifstream tmpFin(partitionFileName.c_str());
     if (tmpFin && algOpt != 2 && algOpt != 7) {
         algOpt = 8;
