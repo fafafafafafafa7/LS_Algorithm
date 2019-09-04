@@ -7,7 +7,7 @@ cmake ..
 make -j4
 ```
 
-#Usage
+# Usage
 
 ./bin/GrEdPa {OPTIONS}
 
